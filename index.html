@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TokenBase — Cheap Domestic LLM Tokens (DeepSeek, Qwen, GLM, Kimi)</title>
+  <meta name="description" content="TokenBase gives developers and businesses unified, OpenAI-compatible access to China's best large language models — DeepSeek, Qwen, GLM, Kimi, ERNIE and more — at a fraction of the official price. Cheap, fast, and reliable." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Announcement bar -->
+  <div class="announce">
+    <div class="container announce__inner">
+      <span class="announce__dot"></span>
+      <p>🎉 New users get <strong>$5 free credit</strong> — no card required. Cheap, reliable tokens for <strong>DeepSeek, Qwen, GLM, Kimi</strong> & more.</p>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="#top" class="brand" aria-label="TokenBase home">
+        <span class="brand__mark">◈</span>
+        <span class="brand__name">TokenBase</span>
+      </a>
+
+      <nav class="nav__links" id="navLinks">
+        <a href="#models">Models</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how">How it works</a>
+        <a href="#docs">Docs</a>
+        <a href="#faq">FAQ</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="nav__actions">
+        <a href="#" class="btn btn--ghost">Sign in</a>
+        <a href="/dashboard" class="btn btn--primary">Get API Key</a>
+      </div>
+
+      <button class="nav__burger" id="navBurger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero__inner">
+        <div class="hero__copy reveal">
+          <span class="pill">⚡ Unified AI gateway · OpenAI-compatible · domestic LLMs</span>
+          <h1 class="hero__title">
+            China's best AI models at a <span class="grad">fraction</span> of the price.
+          </h1>
+          <p class="hero__sub">
+            One API key. DeepSeek, Qwen, GLM, Kimi, ERNIE and more — the models built for
+            Chinese, multilingual and coding workloads. Pay far less than official rates, with the
+            speed and reliability your production apps demand.
+          </p>
+          <div class="hero__cta">
+            <a href="/dashboard" class="btn btn--primary btn--lg">Start free →</a>
+            <a href="#docs" class="btn btn--ghost btn--lg">Read the docs</a>
+          </div>
+          <ul class="hero__trust">
+            <li>✔ No credit card</li>
+            <li>✔ 99.9% uptime SLA</li>
+            <li>✔ Cancel anytime</li>
+          </ul>
+        </div>
+
+        <div class="hero__visual reveal">
+          <div class="codecard">
+            <div class="codecard__bar">
+              <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+              <span class="codecard__title">quickstart.py</span>
+            </div>
+            <pre class="codecard__body"><code><span class="c-kw">from</span> openai <span class="c-kw">import</span> OpenAI
+
+client = OpenAI(
+    api_key=<span class="c-str">"sk-tb-..."</span>,
+    base_url=<span class="c-str">"https://api.tokenbase.ai/v1"</span>,
+)
+
+resp = client.chat.completions.create(
+    model=<span class="c-str">"deepseek-chat"</span>,
+    messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>,
+               <span class="c-str">"content"</span>: <span class="c-str">"Hello!"</span>}],
+)
+<span class="c-cmt"># That's it — swap base_url and go.</span></code></pre>
+            <div class="codecard__foot">
+              <span class="tag tag--save">Save up to 70%</span>
+              <span class="tag">0 config</span>
+              <span class="tag">live in 3 min</span>
+            </div>
+          </div>
+
+          <div class="floatstat floatstat--1">
+            <span class="floatstat__num">$0.14</span>
+            <span class="floatstat__lbl">/ 1M DeepSeek V3 input tokens</span>
+          </div>
+          <div class="floatstat floatstat--2">
+            <span class="floatstat__num">128K</span>
+            <span class="floatstat__lbl">max context window</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- logo strip -->
+      <div class="container">
+        <p class="logostrip__label">Drop-in compatible with your existing OpenAI-based stack</p>
+        <div class="logostrip">
+          <span>OpenAI</span><span>LangChain</span><span>LlamaIndex</span>
+          <span>Vercel AI</span><span>Ollama</span><span>Dify</span>
+          <span>LiteLLM</span><span>FastGPT</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow">Why TokenBase</span>
+          <h2>Stable. Fast. Compatible. Transparent.</h2>
+          <p>API infrastructure built for developers and businesses that ship.</p>
+        </div>
+
+        <div class="grid grid--4">
+          <article class="feature reveal">
+            <div class="feature__icon">🛡️</div>
+            <h3>Auto fail-over</h3>
+            <p>Smart routing across providers with automatic fail-over keeps your app online even when an upstream hiccups.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon">⚡</div>
+            <h3>High-speed &amp; stable</h3>
+            <p>Direct enterprise channels, multi-region load balancing and instant switch-over deliver consistently low latency.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon">🔌</div>
+            <h3>Seamless compatibility</h3>
+            <p>OpenAI protocol. Change a single <code>base_url</code> and your existing projects just work.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon">📊</div>
+            <h3>Transparent billing</h3>
+            <p>Every call is logged in real time with a detailed cost breakdown. No hidden fees, ever.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing / savings -->
+    <section class="section section--alt" id="pricing">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--save">Transparent pricing</span>
+          <h2>Top models, dramatically cheaper</h2>
+          <p>Pay only for what you use. Compare our per-token rates to official list prices.</p>
+        </div>
+
+        <div class="grid grid--4" id="models">
+          <!-- card -->
+          <article class="pricecard reveal">
+            <div class="pricecard__top">
+              <span class="badge badge--hot">🔥 Hot</span>
+              <h3 class="pricecard__name">DeepSeek V3</h3>
+              <p class="pricecard__by">DeepSeek</p>
+            </div>
+            <div class="pricecard__price">
+              <div class="pricecard__row">
+                <span class="pricecard__lbl">Official</span>
+                <span class="pricecard__was">$0.27</span>
+              </div>
+              <div class="pricecard__row pricecard__row--now">
+                <span class="pricecard__lbl">TokenBase</span>
+                <span class="pricecard__now">$0.14<small>/1M in</small></span>
+              </div>
+              <span class="savepill">Save 48%</span>
+            </div>
+            <ul class="pricecard__list">
+              <li>✔ 64K context</li>
+              <li>✔ Top coding &amp; reasoning</li>
+              <li>✔ Open weights</li>
+            </ul>
+          </article>
+
+          <article class="pricecard reveal">
+            <div class="pricecard__top">
+              <span class="badge badge--best">🏆 Best value</span>
+              <h3 class="pricecard__name">Qwen-Max</h3>
+              <p class="pricecard__by">Alibaba</p>
+            </div>
+            <div class="pricecard__price">
+              <div class="pricecard__row">
+                <span class="pricecard__lbl">Official</span>
+                <span class="pricecard__was">$1.60</span>
+              </div>
+              <div class="pricecard__row pricecard__row--now">
+                <span class="pricecard__lbl">TokenBase</span>
+                <span class="pricecard__now">$0.80<small>/1M in</small></span>
+              </div>
+              <span class="savepill">Save 50%</span>
+            </div>
+            <ul class="pricecard__list">
+              <li>✔ 32K context</li>
+              <li>✔ Strong multilingual</li>
+              <li>✔ Agent ready</li>
+            </ul>
+          </article>
+
+          <article class="pricecard reveal">
+            <div class="pricecard__top">
+              <span class="badge">✨ Popular</span>
+              <h3 class="pricecard__name">GLM-4-Plus</h3>
+              <p class="pricecard__by">Zhipu AI</p>
+            </div>
+            <div class="pricecard__price">
+              <div class="pricecard__row">
+                <span class="pricecard__lbl">Official</span>
+                <span class="pricecard__was">$0.80</span>
+              </div>
+              <div class="pricecard__row pricecard__row--now">
+                <span class="pricecard__lbl">TokenBase</span>
+                <span class="pricecard__now">$0.40<small>/1M in</small></span>
+              </div>
+              <span class="savepill">Save 50%</span>
+            </div>
+            <ul class="pricecard__list">
+              <li>✔ 128K context</li>
+              <li>✔ Long-context tasks</li>
+              <li>✔ Tool / function calling</li>
+            </ul>
+          </article>
+
+          <article class="pricecard reveal">
+            <div class="pricecard__top">
+              <span class="badge">⚡ Long context</span>
+              <h3 class="pricecard__name">Kimi</h3>
+              <p class="pricecard__by">Moonshot</p>
+            </div>
+            <div class="pricecard__price">
+              <div class="pricecard__row">
+                <span class="pricecard__lbl">Official</span>
+                <span class="pricecard__was">$0.30</span>
+              </div>
+              <div class="pricecard__row pricecard__row--now">
+                <span class="pricecard__lbl">TokenBase</span>
+                <span class="pricecard__now">$0.18<small>/1M in</small></span>
+              </div>
+              <span class="savepill">Save 40%</span>
+            </div>
+            <ul class="pricecard__list">
+              <li>✔ 200K+ documents</li>
+              <li>✔ Long-text understanding</li>
+              <li>✔ Multilingual</li>
+            </ul>
+          </article>
+        </div>
+
+        <p class="pricing__note reveal">Output tokens priced proportionally. Full model list &amp; live rates in your dashboard. <a href="#models-grid">Browse all models →</a></p>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow">Quick start</span>
+          <h2>Live in three minutes</h2>
+          <p>No sales calls, no contracts. Sign up and ship.</p>
+        </div>
+
+        <div class="steps">
+          <div class="step reveal">
+            <span class="step__num">1</span>
+            <h3>Create an account</h3>
+            <p>Sign up with email and get <strong>$5 free credit</strong> instantly. No payment method required.</p>
+          </div>
+          <div class="step__arrow" aria-hidden="true">→</div>
+          <div class="step reveal">
+            <span class="step__num">2</span>
+            <h3>Generate an API key</h3>
+            <p>One click creates a key you can enable, disable, or scope anytime from the console.</p>
+          </div>
+          <div class="step__arrow" aria-hidden="true">→</div>
+          <div class="step reveal">
+            <span class="step__num">3</span>
+            <h3>Call any model</h3>
+            <p>Point your existing OpenAI client at our base URL. That's the only change you make.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Code / Docs -->
+    <section class="section section--alt" id="docs">
+      <div class="container docs__inner">
+        <div class="docs__copy reveal">
+          <span class="eyebrow">Developer first</span>
+          <h2>Swap one line. Keep your code.</h2>
+          <p>TokenBase speaks the OpenAI protocol natively. Migrate any project by changing a single <code>base_url</code> — no SDK rewrite, no vendor lock-in.</p>
+          <ul class="docs__list">
+            <li>✔ <code>POST /v1/chat/completions</code> — OpenAI compatible</li>
+            <li>✔ <code>POST /v1/messages</code> — Anthropic compatible</li>
+            <li>✔ <code>GET /v1/models</code> — list available models</li>
+            <li>✔ <code>GET /v1/balance</code> — check your credit</li>
+          </ul>
+          <a href="/dashboard" class="btn btn--primary">Read full API reference →</a>
+        </div>
+
+        <div class="docs__code reveal">
+          <div class="codecard codecard--dark">
+            <div class="codecard__bar">
+              <span class="dot dot--r"></span><span class="dot dot--y"></span><span class="dot dot--g"></span>
+              <span class="codecard__title">curl · chat completions</span>
+              <button class="copybtn" data-copy>Copy</button>
+            </div>
+            <pre class="codecard__body"><code id="copyTarget"><span class="c-cmt"># OpenAI-compatible request</span>
+curl https://api.tokenbase.ai/v1/chat/completions \
+  -H <span class="c-str">"Authorization: Bearer sk-tb-..."</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{
+    "model": "deepseek-chat",
+    "messages": [{"role": "user", "content": "Hi!"}]
+  }'</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supported models grid -->
+    <section class="section" id="models-grid">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow">Model library</span>
+          <h2>One key, every model</h2>
+          <p>New models added weekly. Use whichever fits the task and the budget.</p>
+        </div>
+        <div class="modgrid">
+          <span class="modchip">DeepSeek V3</span>
+          <span class="modchip">DeepSeek R1</span>
+          <span class="modchip">Qwen-Max</span>
+          <span class="modchip">Qwen-Plus</span>
+          <span class="modchip">Qwen-Turbo</span>
+          <span class="modchip">GLM-4-Plus</span>
+          <span class="modchip">GLM-4-Air</span>
+          <span class="modchip">Kimi</span>
+          <span class="modchip">ERNIE 4.0</span>
+          <span class="modchip">MiniMax</span>
+          <span class="modchip">StepFun</span>
+          <span class="modchip">Doubao Pro</span>
+          <span class="modchip">+ more weekly</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Enterprise -->
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow">Enterprise ready</span>
+          <h2>API infrastructure for production</h2>
+        </div>
+        <div class="grid grid--3">
+          <article class="entcard reveal">
+            <div class="entcard__icon">🛡️</div>
+            <h3>Enterprise-grade security</h3>
+            <ul>
+              <li>Per-key permission scopes, enable/disable anytime</li>
+              <li>HTTPS encryption, no data at rest</li>
+              <li>Data masking &amp; audit logging, zero-trust architecture</li>
+            </ul>
+          </article>
+          <article class="entcard reveal">
+            <div class="entcard__icon">📈</div>
+            <h3>Full observability</h3>
+            <ul>
+              <li>Real-time usage monitoring &amp; traceable logs</li>
+              <li>Per-call cost detail for effortless reconciliation</li>
+              <li>Live usage dashboard</li>
+            </ul>
+          </article>
+          <article class="entcard reveal">
+            <div class="entcard__icon">🎯</div>
+            <h3>Expert support</h3>
+            <ul>
+              <li>24/7 ticket response</li>
+              <li>Complete developer documentation</li>
+              <li>Dedicated account manager for enterprise</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="container container--narrow">
+        <div class="section__head reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Questions, answered</h2>
+        </div>
+
+        <div class="faq">
+          <div class="faq__item reveal">
+            <button class="faq__q">How is TokenBase so much cheaper than the official APIs?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>We aggregate direct enterprise channels and negotiate volume rates across providers, then pass the savings to you. You get the same models — just at a lower unit price.</p></div>
+          </div>
+          <div class="faq__item reveal">
+            <button class="faq__q">Do I need to change my code?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>Almost never. Point your existing OpenAI client at <code>https://api.tokenbase.ai/v1</code> and update the API key. That's the only change.</p></div>
+          </div>
+          <div class="faq__item reveal">
+            <button class="faq__q">Is my data safe?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>Yes. Traffic is encrypted in transit, we don't store request payloads at rest, and every key can be scoped and revoked instantly. Enterprise plans add audit logging and a zero-trust architecture.</p></div>
+          </div>
+          <div class="faq__item reveal">
+            <button class="faq__q">Which models are available?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>China's leading LLMs — DeepSeek, Qwen, GLM, Kimi, ERNIE, MiniMax, StepFun, Doubao and more, with new models added weekly. See the live list in your dashboard.</p></div>
+          </div>
+          <div class="faq__item reveal">
+            <button class="faq__q">How does billing work?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>Pay-as-you-go by token. You top up your balance and only pay for what you use, with a real-time cost breakdown for every call. New users get $5 free credit.</p></div>
+          </div>
+          <div class="faq__item reveal">
+            <button class="faq__q">What about rate limits and uptime?<span class="faq__plus">+</span></button>
+            <div class="faq__a"><p>We run multi-region load balancing with automatic fail-over and a 99.9% uptime SLA. Limits scale with your plan, and higher tiers raise them automatically.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="cta" id="contact">
+      <div class="container cta__inner reveal">
+        <h2>Let technology return to its value.</h2>
+        <p>Every developer deserves the best models — not a wall of price. Get started free, no card required.</p>
+        <div class="cta__actions">
+          <a href="/dashboard" class="btn btn--light btn--lg">Get $5 free credit →</a>
+          <a href="#" class="btn btn--outline btn--lg">Talk to sales</a>
+        </div>
+        <p class="cta__fine">New users get $5 free credit · No payment method required</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <a href="#top" class="brand">
+          <span class="brand__mark">◈</span>
+          <span class="brand__name">TokenBase</span>
+        </a>
+        <p>Premium AI models at a fraction of the cost. Built for developers who ship.</p>
+      </div>
+      <div class="footer__col">
+        <h4>Product</h4>
+        <a href="#models">Models</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#docs">API Reference</a>
+        <a href="#how">Quickstart</a>
+      </div>
+      <div class="footer__col">
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Blog</a>
+        <a href="#contact">Contact</a>
+        <a href="#">Status</a>
+      </div>
+      <div class="footer__col">
+        <h4>Legal</h4>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Security</a>
+        <a href="#">DPA</a>
+      </div>
+    </div>
+    <div class="container footer__bottom">
+      <p>© 2026 TokenBase. All rights reserved.</p>
+      <p class="footer__note">TokenBase is an independent API gateway. Model tokens are resold via the providers' official API channels; TokenBase is not affiliated with or endorsed by the model vendors.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TokenBase — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root{--brand:#4f46e5;--brand-2:#7c3aed;--save:#10b981;--ink:#0d1222;--ink-2:#475067;--line:#e4e8f2;--bg:#f7f8fc;--surface:#fff;}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh}
+    a{color:var(--brand);text-decoration:none}
+    .wrap{max-width:880px;margin:0 auto;padding:32px 24px 64px}
+    .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px}
+    .brand .m{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(120deg,#4f46e5,#7c3aed);color:#fff}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 12px 32px rgba(13,18,34,.07)}
+    h1{font-size:30px;letter-spacing:-.02em;margin-bottom:6px}
+    .muted{color:var(--ink-2);font-size:15px}
+    label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:18px 0 7px}
+    input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit}
+    input:focus{outline:none;border-color:var(--brand)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;padding:12px 22px;border-radius:999px;border:1px solid transparent;cursor:pointer;font-size:15px}
+    .btn--primary{background:linear-gradient(120deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 8px 22px rgba(79,70,229,.3)}
+    .btn--primary:hover{transform:translateY(-1px)}
+    .btn--ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+    .btn--lg{width:100%;padding:14px;font-size:16px;margin-top:22px}
+    .balance{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+    .bal{flex:1;min-width:150px;background:linear-gradient(120deg,#4f46e5,#7c3aed);color:#fff;border-radius:14px;padding:18px 20px}
+    .bal small{opacity:.85;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+    .bal b{display:block;font-size:28px;font-weight:800;margin-top:4px}
+    .bal--bonus{background:#ecfdf5;color:#047857}
+    .keybox{display:flex;gap:10px;align-items:center;margin-top:6px}
+    .keybox code{font-family:JetBrains Mono,monospace;background:#eef1f9;padding:10px 12px;border-radius:10px;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .pkgs{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
+    .pkg{border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px}
+    .pkg b{font-size:18px}
+    .pkg span{color:var(--ink-2);font-size:13px}
+    .pkg .btn{margin-top:auto}
+    .snippet{background:#0f1226;color:#d7dcf5;font-family:JetBrains Mono,monospace;font-size:13px;line-height:1.7;padding:16px;border-radius:12px;overflow-x:auto;margin-top:10px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+    .hidden{display:none}
+    .tag{font-size:12px;font-weight:700;color:#047857;background:#ecfdf5;padding:3px 10px;border-radius:999px}
+    .danger{color:#c2410c}
+    @media(max-width:620px){.pkgs{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand"><span class="m">◈</span> TokenBase</div>
+      <a href="/" class="muted">← Back to site</a>
+    </div>
+
+    <!-- Register -->
+    <section id="view-register" class="card">
+      <h1>Create your account</h1>
+      <p class="muted">Get an API key and <strong id="freeAmt">$5</strong> free credit — no card required.</p>
+      <form id="regForm">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com" required />
+        <button class="btn btn--primary btn--lg" type="submit">Create API key →</button>
+      </form>
+      <p id="regErr" class="danger" style="margin-top:12px"></p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="view-dash" class="hidden">
+      <div class="card" style="margin-bottom:22px">
+        <div class="row" style="justify-content:space-between">
+          <div><h1 style="margin:0">Your dashboard</h1><p class="muted" id="userEmail"></p></div>
+          <button class="btn btn--ghost" id="logout">Log out</button>
+        </div>
+        <div class="balance">
+          <div class="bal"><small>Total balance</small><b id="balTotal">$0.00</b></div>
+          <div class="bal bal--bonus"><small>Free credit</small><b id="balBonus">$0.00</b></div>
+          <div class="bal" style="background:#eef1f9;color:#3730a3"><small>Purchased</small><b id="balPaid">$0.00</b></div>
+        </div>
+        <label>Your API key</label>
+        <div class="keybox">
+          <code id="apiKey">sk-tb-...</code>
+          <button class="btn btn--ghost" id="copyKey">Copy</button>
+        </div>
+        <label>Quickstart</label>
+        <div class="snippet">curl https://<span id="host">localhost</span>/v1/chat/completions \<br>
+  -H "Authorization: Bearer &lt;your-key&gt;" \<br>
+  -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"Hi!"}]}'</div>
+      </div>
+
+      <div class="card">
+        <h1 style="font-size:24px">Buy tokens</h1>
+        <p class="muted">Top up your balance. Prices are set by the operator.</p>
+        <div class="pkgs" id="pkgList"></div>
+        <p id="payErr" class="danger" style="margin-top:12px"></p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>
