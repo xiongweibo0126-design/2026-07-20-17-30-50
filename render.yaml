@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: tokenbase
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: node server/server.js
+    healthCheckPath: /
+    envVars: []

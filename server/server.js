@@ -178,8 +178,10 @@ async function lsCheckout(user, pkg) {
 }
 function verifyPaddle(raw, sigHeader) {
   const secret = config.paddle.webhookSecret; if (!secret || !sigHeader) return false;
-  const parts = sigHeader.split(','); let ts = '', h1 = '';
-  parts.forEach((p) => { const [k, v] = p.split('='); if (k === 'ts') ts = v; if (k === 'h1') h1 = v; });
+  // Paddle sends "ts=...;h1=..." (also tolerate ",") — parse robustly.
+  const parts = sigHeader.split(/[;,]/); let ts = '', h1 = '';
+  parts.forEach((p) => { const i = p.indexOf('='); if (i < 0) return; const k = p.slice(0, i).trim(), v = p.slice(i + 1).trim(); if (k === 'ts') ts = v; if (k === 'h1') h1 = v; });
+  if (!ts || !h1) return false;
   const expected = crypto.createHmac('sha256', secret).update(ts + ':' + raw).digest('hex');
   try { return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(h1)); } catch { return false; }
 }

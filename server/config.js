@@ -90,11 +90,11 @@ module.exports = {
   },
 
   // ---- TOP-UP PACKAGES (price paid = credit added, in USD) ----
+  // Keep this in sync with the products you created in Paddle.
   packages: [
     { id: 'starter',  name: '$5 Starter',    price: 5,   credit: 5 },
     { id: 'pro',      name: '$20 Pro',        price: 20,  credit: 20 },
     { id: 'scale',    name: '$100 Scale',     price: 100, credit: 100 },
-    { id: 'business', name: '$500 Business',  price: 500, credit: 500 },
   ],
 
   // ---- PAYMENT PROVIDER ----
@@ -111,7 +111,6 @@ module.exports = {
       starter:  process.env.PADDLE_PRICE_STARTER  || '',
       pro:      process.env.PADDLE_PRICE_PRO      || '',
       scale:    process.env.PADDLE_PRICE_SCALE    || '',
-      business: process.env.PADDLE_PRICE_BUSINESS || '',
     },
   },
 
@@ -123,7 +122,6 @@ module.exports = {
       starter:  process.env.LS_VAR_STARTER  || '',
       pro:      process.env.LS_VAR_PRO      || '',
       scale:    process.env.LS_VAR_SCALE    || '',
-      business: process.env.LS_VAR_BUSINESS || '',
     },
   },
 };
