@@ -155,14 +155,22 @@ async function paddleCheckout(user, pkg) {
   const base = config.paddle.env === 'production' ? 'https://api.paddle.com' : 'https://sandbox-api.paddle.com';
   const priceId = config.paddle.prices[pkg.id];
   if (!config.paddle.apiKey || !priceId) throw new Error('Paddle not configured for ' + pkg.id);
-  const r = await fetch(base + '/checkout/sessions', {
+  // Paddle Billing API v2: create a transaction → response includes checkout.url
+  const r = await fetch(base + '/transactions', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + config.paddle.apiKey },
-    body: JSON.stringify({ items: [{ price_id: priceId, quantity: 1 }], custom_data: { userId: user.id, packageId: pkg.id }, customer: user.email ? { email: user.email } : undefined }),
+    body: JSON.stringify({
+      items: [{ price_id: priceId, quantity: 1 }],
+      custom_data: { userId: user.id, packageId: pkg.id },
+      customer_email: user.email || undefined,
+    }),
   });
   const j = await r.json();
-  if (!j.data || !j.data.url) throw new Error('Paddle checkout failed: ' + JSON.stringify(j));
-  return j.data.url;
+  // Response shape: { data: { id: ..., checkout: { url: '...' }, ... } }
+  if (!j.data || !j.data.checkout || !j.data.checkout.url) {
+    throw new Error('Paddle checkout failed: ' + JSON.stringify(j));
+  }
+  return j.data.checkout.url;
 }
 async function lsCheckout(user, pkg) {
   const variantId = config.lemonsqueezy.variants[pkg.id];
