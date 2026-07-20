@@ -304,6 +304,9 @@ const server = http.createServer(async (req, res) => {
     // ---- pages ----
     if (method === 'GET' && pathname === '/') return serveFile(res, path.join(ROOT, 'index.html'));
     if (method === 'GET' && pathname === '/dashboard') return serveFile(res, path.join(PUBLIC, 'dashboard.html'));
+    if (method === 'GET' && pathname === '/terms') return serveFile(res, path.join(ROOT, 'terms.html'));
+    if (method === 'GET' && pathname === '/privacy') return serveFile(res, path.join(ROOT, 'privacy.html'));
+    if (method === 'GET' && pathname === '/refunds') return serveFile(res, path.join(ROOT, 'refunds.html'));
     if (method === 'GET' && (pathname === '/styles.css' || pathname === '/script.js')) return serveFile(res, path.join(ROOT, pathname.slice(1)));
     if (method === 'GET' && pathname === '/dashboard.js') return serveFile(res, path.join(PUBLIC, 'dashboard.js'));
 
