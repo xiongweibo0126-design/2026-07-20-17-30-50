@@ -41,11 +41,11 @@ function estimateTokensFromSSE(sse) {
   while ((m = re.exec(sse))) text += m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
   return estimateTokens(text);
 }
-function requireUser(req, res) {
+async function requireUser(req, res) {
   const auth = req.headers['authorization'] || '';
   const key = auth.startsWith('Bearer ') ? auth.slice(7) : (req.headers['x-api-key'] || '');
   if (!key) { sendError(res, 401, 'auth_error', 'Missing API key'); return null; }
-  const user = store.getUserByKey(key);
+  const user = await store.getUserByKey(key);
   if (!user) { sendError(res, 401, 'auth_error', 'Invalid API key'); return null; }
   return user;
 }
@@ -60,7 +60,7 @@ function resolveProvider(model) {
 
 /* ---------------- proxy + billing ---------------- */
 async function handleProxy(req, res, pathname) {
-  const user = requireUser(req, res);
+  const user = await requireUser(req, res);
   if (!user) return;
 
   if (pathname === '/v1/balance') {
@@ -98,7 +98,7 @@ async function handleProxy(req, res, pathname) {
     const promptTok = estimateTokens(JSON.stringify(body.messages || body.input || ''));
     const compTok = 25;
     const cost = (promptTok / 1e6) * price.in + (compTok / 1e6) * price.out;
-    store.debit(user, cost);
+    await store.debit(user, cost);
     const out = isAnthropic
       ? { type: 'message', role: 'assistant', model, content: [{ type: 'text', text: '[Demo] TokenBase proxy works. Set the provider API key (e.g. DASHSCOPE_API_KEY) to route to a real model.' }], stop_reason: 'end_turn', usage: { input_tokens: promptTok, output_tokens: compTok } }
       : { id: 'chatcmpl-demo', object: 'chat.completion', model, choices: [{ index: 0, message: { role: 'assistant', content: '[Demo] TokenBase proxy works. Set the provider API key (e.g. DASHSCOPE_API_KEY) to route to a real model.' }, finish_reason: 'stop' }], usage: { prompt_tokens: promptTok, completion_tokens: compTok, total_tokens: promptTok + compTok } };
@@ -125,7 +125,7 @@ async function handleProxy(req, res, pathname) {
         const u = j.usage || {};
         const pTok = isAnthropic ? (u.input_tokens || 0) : (u.prompt_tokens || 0);
         const cTok = isAnthropic ? (u.output_tokens || 0) : (u.completion_tokens || 0);
-        store.debit(user, (pTok / 1e6) * price.in + (cTok / 1e6) * price.out);
+        await store.debit(user, (pTok / 1e6) * price.in + (cTok / 1e6) * price.out);
       } catch {}
     }
     res.writeHead(upstreamRes.status, { 'content-type': 'application/json' });
@@ -147,7 +147,7 @@ async function handleProxy(req, res, pathname) {
   } finally { res.end(); }
   const cTok = estimateTokensFromSSE(acc);
   const pTok = estimateTokens(JSON.stringify(body.messages || body.input || ''));
-  store.debit(user, (pTok / 1e6) * price.in + (cTok / 1e6) * price.out);
+  await store.debit(user, (pTok / 1e6) * price.in + (cTok / 1e6) * price.out);
 }
 
 /* ---------------- payments ---------------- */
@@ -198,7 +198,7 @@ function verifyLS(raw, sigHeader) {
   const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex');
   return expected === sigHeader;
 }
-function creditFromEvent(user, pkg, note) { if (user && pkg) store.credit(user, pkg.credit, note); }
+async function creditFromEvent(user, pkg, note) { if (user && pkg) await store.credit(user, pkg.credit, note); }
 
 function successHtml(pkgName, balance) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Payment success</title>
@@ -229,15 +229,15 @@ const server = http.createServer(async (req, res) => {
     // ---- API: account ----
     if (method === 'POST' && pathname === '/api/register') {
       const body = JSON.parse(await readBody(req) || '{}');
-      const user = store.createUser(body.email);
-      if (config.freeCreditOnSignup > 0) store.credit(user, config.freeCreditOnSignup, 'free signup credit');
+      const user = await store.createUser(body.email);
+      if (config.freeCreditOnSignup > 0) await store.credit(user, config.freeCreditOnSignup, 'free signup credit');
       return sendJSON(res, 200, {
         id: user.id, apiKey: user.apiKey, email: user.email,
         balance: user.balance, bonusBalance: user.bonusBalance, totalBalance: store.totalBalance(user),
       });
     }
     if (method === 'GET' && pathname === '/api/me') {
-      const user = store.getUserByKey(url.searchParams.get('key'));
+      const user = await store.getUserByKey(url.searchParams.get('key'));
       if (!user) return sendError(res, 401, 'auth_error', 'Invalid API key');
       return sendJSON(res, 200, { id: user.id, email: user.email, balance: user.balance, bonusBalance: user.bonusBalance, totalBalance: store.totalBalance(user) });
     }
@@ -248,7 +248,7 @@ const server = http.createServer(async (req, res) => {
     // ---- API: checkout ----
     if (method === 'POST' && pathname === '/api/checkout') {
       const body = JSON.parse(await readBody(req) || '{}');
-      const user = store.getUserByKey(body.key);
+      const user = await store.getUserByKey(body.key);
       if (!user) return sendError(res, 401, 'auth_error', 'Invalid API key');
       const pkg = config.packages.find((p) => p.id === body.packageId);
       if (!pkg) return sendError(res, 400, 'bad_request', 'Unknown package');
@@ -265,9 +265,9 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { url, provider: config.paymentProvider });
     }
     if (method === 'GET' && pathname === '/api/sandbox-pay') {
-      const user = store.getUserByKey(url.searchParams.get('key'));
+      const user = await store.getUserByKey(url.searchParams.get('key'));
       const pkg = config.packages.find((p) => p.id === url.searchParams.get('packageId'));
-      if (user && pkg) store.credit(user, pkg.credit, 'sandbox top-up ' + pkg.name);
+      if (user && pkg) await store.credit(user, pkg.credit, 'sandbox top-up ' + pkg.name);
       res.writeHead(200, { 'content-type': 'text/html' });
       return res.end(successHtml(pkg ? pkg.name : '', user ? store.totalBalance(user) : 0));
     }
@@ -279,9 +279,9 @@ const server = http.createServer(async (req, res) => {
       const evt = JSON.parse(raw);
       if (evt.event_type === 'transaction.completed') {
         const cd = evt.data?.custom_data || {};
-        const user = store.getUserById(cd.userId);
+        const user = await store.getUserById(cd.userId);
         const pkg = config.packages.find((p) => p.id === cd.packageId);
-        creditFromEvent(user, pkg, 'Paddle: ' + (evt.data?.id || ''));
+        await creditFromEvent(user, pkg, 'Paddle: ' + (evt.data?.id || ''));
       }
       return sendJSON(res, 200, { received: true });
     }
@@ -291,9 +291,9 @@ const server = http.createServer(async (req, res) => {
       const evt = JSON.parse(raw);
       const cd = evt.meta?.custom_data || {};
       if (evt.meta?.event_name === 'order_created' || evt.meta?.event_name === 'subscription_payment_success') {
-        const user = store.getUserById(cd.userId);
+        const user = await store.getUserById(cd.userId);
         const pkg = config.packages.find((p) => p.id === cd.packageId);
-        creditFromEvent(user, pkg, 'LemonSqueezy: ' + (evt.data?.id || ''));
+        await creditFromEvent(user, pkg, 'LemonSqueezy: ' + (evt.data?.id || ''));
       }
       return sendJSON(res, 200, { received: true });
     }
@@ -319,9 +319,11 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(config.port, () => {
-  const configured = Object.entries(config.providers).filter(([, p]) => p.apiKey).map(([k]) => k);
-  console.log(`TokenBase MVP running at http://localhost:${config.port}`);
-  console.log(`Payment provider: ${config.paymentProvider}`);
-  console.log(`Providers with keys: ${configured.length ? configured.join(', ') : 'NONE (DEMO mode for all models)'}`);
+store.initDB().catch((e) => console.error('DB init error:', e.message)).finally(() => {
+  server.listen(config.port, () => {
+    const configured = Object.entries(config.providers).filter(([, p]) => p.apiKey).map(([k]) => k);
+    console.log(`TokenBase MVP running at http://localhost:${config.port}`);
+    console.log(`Payment provider: ${config.paymentProvider}`);
+    console.log(`Providers with keys: ${configured.length ? configured.join(', ') : 'NONE (DEMO mode for all models)'}`);
+  });
 });
