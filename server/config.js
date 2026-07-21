@@ -106,6 +106,7 @@ module.exports = {
   paddle: {
     apiKey: process.env.PADDLE_API_KEY || '',
     webhookSecret: process.env.PADDLE_WEBHOOK_SECRET || '',
+    clientToken: process.env.PADDLE_CLIENT_TOKEN || '',  // for Paddle.js overlay checkout
     env: process.env.PADDLE_ENV || 'sandbox', // 'sandbox' | 'production'
     prices: {
       starter:  process.env.PADDLE_PRICE_STARTER  || '',

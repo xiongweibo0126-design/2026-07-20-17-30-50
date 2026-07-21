@@ -245,6 +245,14 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { currency: config.currency, packages: config.packages });
     }
 
+    // ---- API: Paddle client-side config ----
+    if (method === 'GET' && pathname === '/api/paddle-config') {
+      return sendJSON(res, 200, {
+        environment: config.paddle.env,
+        token: config.paddle.clientToken || '',
+      });
+    }
+
     // ---- API: checkout ----
     if (method === 'POST' && pathname === '/api/checkout') {
       const body = JSON.parse(await readBody(req) || '{}');

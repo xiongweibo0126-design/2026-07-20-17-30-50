@@ -1,4 +1,4 @@
-/* TokenBase dashboard logic (no framework) */
+/* TokenBase dashboard logic with Paddle.js overlay checkout */
 const $ = (id) => document.getElementById(id);
 const KEY = 'tb_api_key';
 
@@ -6,6 +6,68 @@ function show(view) {
   $('view-register').classList.toggle('hidden', view !== 'register');
   $('view-dash').classList.toggle('hidden', view !== 'dash');
 }
+
+/* ---- Paddle.js integration ---- */
+let paddleReady = false;
+
+async function initPaddle() {
+  try {
+    const r = await fetch('/api/paddle-config');
+    if (!r.ok) return;
+    const cfg = await r.json();
+    if (!cfg.token) return;
+    if (cfg.environment === 'production') Paddle.Environment.set('production');
+    Paddle.Initialize({
+      token: cfg.token,
+      eventCallback: function(data) {
+        if (data.name === 'checkout.completed') {
+          // Payment done — refresh balance after a short delay for webhook
+          $('payErr').textContent = '';
+          $('payErr').style.color = '#047857';
+          $('payErr').textContent = '✓ Payment received! Refreshing balance...';
+          setTimeout(() => { refreshMe(); $('payErr').textContent = ''; }, 3000);
+        }
+        if (data.name === 'checkout.closed') {
+          // User closed checkout without completing — do nothing
+        }
+      },
+    });
+    paddleReady = true;
+  } catch (e) { console.warn('Paddle.js init failed:', e.message); }
+}
+
+function openPaddleCheckout(txnId) {
+  if (!paddleReady || !window.Paddle) {
+    $('payErr').textContent = 'Payment system loading… please try again in a few seconds.';
+    return;
+  }
+  try {
+    Paddle.Checkout.open({ transaction: txnId });
+  } catch (e) {
+    // Fallback: redirect to URL with _ptxn (Paddle.js may auto-detect)
+    const url = '/dashboard?_ptxn=' + txnId;
+    window.location.href = url;
+  }
+}
+
+// If page loaded with _ptxn param, let Paddle.js auto-open the checkout
+(function checkPtxn() {
+  const params = new URLSearchParams(location.search);
+  const ptxn = params.get('_ptxn');
+  if (ptxn) {
+    // Wait for Paddle to init, then open
+    (function waitForPaddle(retries) {
+      if (retries <= 0) return;
+      if (paddleReady && window.Paddle) {
+        try { Paddle.Checkout.open({ transaction: ptxn }); } catch(e) {}
+        return;
+      }
+      setTimeout(() => waitForPaddle(retries - 1), 500);
+    })(20); // try for ~10 seconds
+  }
+})();
+
+/* ---- Dashboard logic ---- */
 
 async function refreshMe() {
   const key = localStorage.getItem(KEY);
@@ -40,6 +102,7 @@ async function loadPackages() {
 
 async function buy(packageId) {
   $('payErr').textContent = '';
+  $('payErr').style.color = '#c2410c';
   const key = localStorage.getItem(KEY);
   try {
     const r = await fetch('/api/checkout', {
@@ -48,7 +111,14 @@ async function buy(packageId) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error?.message || 'Checkout failed');
-    window.location.href = d.url;
+    // Extract transaction ID from _ptxn=txn_... and open Paddle overlay
+    const match = (d.url || '').match(/_ptxn=(txn_[a-z0-9]+)/);
+    if (match) {
+      openPaddleCheckout(match[1]);
+    } else {
+      // Fallback redirect
+      window.location.href = d.url;
+    }
   } catch (e) { $('payErr').textContent = e.message; }
 }
 
@@ -78,5 +148,6 @@ $('logout').addEventListener('click', () => { localStorage.removeItem(KEY); show
 
 // init
 $('host').textContent = location.host;
+initPaddle();
 loadPackages();
 refreshMe();
