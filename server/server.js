@@ -209,6 +209,52 @@ function successHtml(pkgName, balance) {
   <p class="b">New balance: $${balance.toFixed(2)}</p><a href="/dashboard">Back to dashboard →</a></div></body></html>`;
 }
 
+/* ---------------- Paddle webhook IP allowlist (security hardening) ----------------
+ * Source of truth: https://api.paddle.com/ips (the list can change, so we fetch
+ * it at runtime instead of hard-coding). Fail-open: if we can't fetch the list
+ * (or it's empty), we allow all traffic rather than risk blocking real Paddle
+ * webhooks. We only ever REJECT a request when the list loaded successfully and
+ * the request IP is NOT in it.
+ */
+let paddleIpCidrs = [];
+let paddleIpReady = false;
+async function refreshPaddleIps() {
+  try {
+    const r = await fetch('https://api.paddle.com/ips', { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const j = await r.json();
+    const list = (j.data && j.data.ipv4_cidrs) || [];
+    if (Array.isArray(list) && list.length) {
+      paddleIpCidrs = list;
+      paddleIpReady = true;
+      console.log('[webhook] Loaded', list.length, 'Paddle IPv4 CIDRs for allowlist');
+    } else {
+      console.warn('[webhook] Paddle IP list empty — allowlist disabled (fail-open)');
+    }
+  } catch (e) {
+    console.warn('[webhook] Could not fetch Paddle IPs — allowlist disabled (fail-open):', e.message);
+  }
+}
+function ipInCidr(ip, cidr) {
+  try {
+    const [base, bits] = cidr.split('/');
+    const mask = ~(2 ** (32 - Number(bits)) - 1) >>> 0;
+    const ipNum = ip.split('.').reduce((a, o) => (a << 8) + Number(o), 0) >>> 0;
+    const baseNum = base.split('.').reduce((a, o) => (a << 8) + Number(o), 0) >>> 0;
+    return (ipNum & mask) === (baseNum & mask);
+  } catch { return false; }
+}
+function isPaddleIp(ip) {
+  if (!paddleIpReady || !paddleIpCidrs.length) return true; // fail-open
+  const clean = (ip || '').split('/')[0].trim();
+  return paddleIpCidrs.some((c) => ipInCidr(clean, c));
+}
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.socket.remoteAddress || '';
+}
+
 /* ---------------- static ---------------- */
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.svg': 'image/svg+xml', '.json': 'application/json' };
 function serveFile(res, filePath) {
@@ -292,6 +338,12 @@ const server = http.createServer(async (req, res) => {
 
     // ---- API: payment webhooks ----
     if (method === 'POST' && pathname === '/api/webhook/paddle') {
+      // IP allowlist: only reject if the list loaded AND the source isn't Paddle.
+      // (Fail-open — never blocks when the list is unavailable.)
+      if (process.env.ENABLE_PADDLE_IP_ALLOWLIST !== 'false' && !isPaddleIp(clientIp(req))) {
+        console.warn('[webhook] Rejected Paddle webhook from non-Paddle IP:', clientIp(req));
+        return res.writeHead(403), res.end('forbidden');
+      }
       const raw = await readBody(req);
       if (!verifyPaddle(raw, req.headers['paddle-signature'])) return res.writeHead(401), res.end('bad signature');
       const evt = JSON.parse(raw);
@@ -345,3 +397,7 @@ store.initDB().catch((e) => console.error('DB init error:', e.message)).finally(
     console.log(`Providers with keys: ${configured.length ? configured.join(', ') : 'NONE (DEMO mode for all models)'}`);
   });
 });
+
+// Warm + periodically refresh the Paddle webhook IP allowlist.
+refreshPaddleIps();
+setInterval(refreshPaddleIps, 6 * 60 * 60 * 1000); // every 6 hours
