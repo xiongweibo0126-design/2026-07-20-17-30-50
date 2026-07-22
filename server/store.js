@@ -28,16 +28,26 @@ let lastDnsError = '';
 // The CONNECTION-POOLER (PgBouncer) host publishes IPv4 and IS reachable.
 // Auto-rewrite the direct host -> pooler host so it "just works" regardless
 // of which host the user pasted into DATABASE_URL (direct OR pooler).
+// We also re-encode the credentials so special chars like '!' in the
+// password don't break the Postgres connection-string parser.
+function safeEncode(s) {
+  try { return encodeURIComponent(decodeURIComponent(s)); }
+  catch (e) { return encodeURIComponent(s); }
+}
 function supabasePooler(connStr) {
   try {
     const url = new URL(connStr);
-    const m = /^db\.(.+)\.supabase\.co$/.exec(url.hostname);
-    if (!m) return connStr; // not a Supabase direct host; leave as-is
-    const region = 'ap-southeast-1'; // Supabase project region (Singapore)
-    url.hostname = `aws-0-${region}.pooler.supabase.com`;
-    if (!url.port || url.port === '5432') url.port = '6543';
+    if (!/\.supabase\.co$/.test(url.hostname)) return connStr; // not Supabase; leave as-is
+    if (url.username) url.username = safeEncode(url.username);
+    if (url.password) url.password = safeEncode(url.password);
+    // Direct host -> pooler host (IPv4 reachable from Render).
+    if (/^db\..+\.supabase\.co$/.test(url.hostname)) {
+      const region = 'ap-southeast-1'; // Supabase project region (Singapore)
+      url.hostname = `aws-0-${region}.pooler.supabase.com`;
+      if (!url.port || url.port === '5432') url.port = '6543';
+    }
     url.searchParams.set('pgbouncer', 'true');
-    console.log('[store] Rewrote Supabase direct host -> pooler (IPv4):', url.hostname + ':' + url.port);
+    console.log('[store] Rewrote Supabase host -> pooler (IPv4):', url.hostname + ':' + url.port);
     return url.toString();
   } catch (e) {
     console.warn('[store] supabasePooler rewrite failed:', e.message);
