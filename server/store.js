@@ -42,9 +42,14 @@ function supabasePooler(connStr) {
     if (url.password) url.password = safeEncode(url.password);
     // Direct host -> pooler host (IPv4 reachable from Render).
     if (/^db\..+\.supabase\.co$/.test(url.hostname)) {
+      const ref = url.hostname.match(/^db\.(.+)\.supabase\.co$/)[1];
       const region = 'ap-southeast-1'; // Supabase project region (Singapore)
       url.hostname = `aws-0-${region}.pooler.supabase.com`;
       if (!url.port || url.port === '5432') url.port = '6543';
+      // The pooler identifies the tenant via the username suffix "<role>.<ref>"
+      // (the direct host encodes the ref in the hostname instead). The direct
+      // connection uses just "postgres", so append the project ref here.
+      if (url.username && !url.username.includes('.')) url.username = url.username + '.' + ref;
     }
     url.searchParams.set('pgbouncer', 'true');
     console.log('[store] Rewrote Supabase host -> pooler (IPv4):', url.hostname + ':' + url.port);
