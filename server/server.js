@@ -253,6 +253,14 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    // ---- TEMP DEBUG: list env var keys present (no values) ----
+    if (method === 'GET' && pathname === '/api/debug-env') {
+      const keys = Object.keys(process.env)
+        .filter((k) => /PADDLE|DATABASE|DEEPSEEK|PAYMENT/i.test(k))
+        .map((k) => `${k}=${process.env[k] ? 'SET(' + process.env[k].length + 'chars)' : 'EMPTY'}`);
+      return sendJSON(res, 200, { keys });
+    }
+
     // ---- API: checkout ----
     if (method === 'POST' && pathname === '/api/checkout') {
       const body = JSON.parse(await readBody(req) || '{}');
