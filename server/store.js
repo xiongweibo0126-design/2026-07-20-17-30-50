@@ -25,6 +25,7 @@ async function resolveIPv4(connStr) {
   try {
     const url = new URL(connStr);
     const { address } = await dns.promises.lookup(url.hostname, { family: 4 });
+    console.log('[store] Resolved DB host', url.hostname, '->', address, '(IPv4)');
     return connStr.replace(url.hostname, address);
   } catch (e) {
     console.warn('[store] IPv4 resolve failed, falling back to original host:', e.message);
