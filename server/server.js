@@ -255,7 +255,7 @@ const server = http.createServer(async (req, res) => {
 
     // ---- version marker (diagnostic) ----
     if (method === 'GET' && pathname === '/api/version') {
-      return sendJSON(res, 200, { tag: 'deploy-ipv4-resolve-v2', db: !!process.env.DATABASE_URL });
+      return sendJSON(res, 200, { tag: 'deploy-ipv4-setDefaultResultOrder', db: !!process.env.DATABASE_URL, dnsError: store.getDiagnostics().lastDnsError || null });
     }
 
     // ---- API: checkout ----

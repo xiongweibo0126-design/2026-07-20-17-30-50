@@ -12,25 +12,41 @@ const path = require('path');
 const crypto = require('crypto');
 const dns = require('dns');
 
+// Render free tier cannot reach IPv6 (ENETUNREACH). Node 17+ resolves DNS in
+// "verbatim" order, so Supabase's AAAA (IPv6) record is often returned first
+// and pg connects over IPv6 -> ENETUNREACH. Force the whole process to prefer
+// IPv4 for every lookup (including pg's internal host resolution).
+try { dns.setDefaultResultOrder('ipv4first'); } catch (e) { /* older node */ }
+
 const USE_DB = !!process.env.DATABASE_URL;
 
 let pgPool = null;
+let lastDnsError = '';
 
-// Render free tier cannot reach IPv6 (ENETUNREACH). Supabase's host resolves
-// to both A and AAAA records, and pg tends to pick the AAAA one. Resolve the
-// hostname to a concrete IPv4 address at startup and inline it into the
-// connection string so the socket never attempts IPv6. `family: 4` is kept as
-// a belt-and-suspenders hint.
+// Belt-and-suspenders: also try to resolve the host to a concrete IPv4 address
+// and inline it into the connection string. If the lookup fails we record the
+// reason (exposed via getDiagnostics) and fall back to the original host —
+// the ipv4first default above still steers pg away from IPv6 in that case.
 async function resolveIPv4(connStr) {
   try {
     const url = new URL(connStr);
-    const { address } = await dns.promises.lookup(url.hostname, { family: 4 });
-    console.log('[store] Resolved DB host', url.hostname, '->', address, '(IPv4)');
-    return connStr.replace(url.hostname, address);
+    const records = await dns.promises.lookup(url.hostname, { all: true });
+    const v4 = records.find((r) => r.family === 4);
+    if (v4) {
+      console.log('[store] Resolved DB host', url.hostname, '->', v4.address, '(IPv4)');
+      return connStr.replace(url.hostname, v4.address);
+    }
+    lastDnsError = 'no A record for ' + url.hostname + ' (records: ' + JSON.stringify(records) + ')';
+    console.warn('[store] ' + lastDnsError);
   } catch (e) {
-    console.warn('[store] IPv4 resolve failed, falling back to original host:', e.message);
-    return connStr;
+    lastDnsError = e.message;
+    console.warn('[store] IPv4 resolve failed:', e.message);
   }
+  return connStr;
+}
+
+function getDiagnostics() {
+  return { lastDnsError };
 }
 
 async function initDB() {
@@ -165,4 +181,4 @@ async function debit(user, cost) {
   }
 }
 
-module.exports = { initDB, newId, genKey, getUserByKey, getUserById, createUser, totalBalance, debit, credit };
+module.exports = { initDB, newId, genKey, getUserByKey, getUserById, createUser, totalBalance, debit, credit, getDiagnostics };
