@@ -7,8 +7,10 @@ function show(view) {
   $('view-dash').classList.toggle('hidden', view !== 'dash');
 }
 
-/* ---- Paddle.js integration ---- */
+/* ---- Paddle.js integration (items-based overlay — official recommended way) ---- */
 let paddleReady = false;
+/** Price-ID map: packageId → paddlePriceId, populated by loadPackages(). */
+const priceIdMap = {};
 
 async function initPaddle() {
   try {
@@ -21,7 +23,6 @@ async function initPaddle() {
       token: cfg.token,
       eventCallback: function(data) {
         if (data.name === 'checkout.completed') {
-          // Payment done — refresh balance after a short delay for webhook
           $('payErr').textContent = '';
           $('payErr').style.color = '#047857';
           $('payErr').textContent = '✓ Payment received! Refreshing balance...';
@@ -36,36 +37,25 @@ async function initPaddle() {
   } catch (e) { console.warn('Paddle.js init failed:', e.message); }
 }
 
-function openPaddleCheckout(txnId) {
+/**
+ * Open Paddle overlay checkout using the official items-based approach.
+ * This is more reliable than passing a pre-created transaction ID and
+ * is the method shown in Paddle's own docs.
+ */
+function openPaddleCheckout(priceId, userId, packageId) {
   if (!paddleReady || !window.Paddle) {
     $('payErr').textContent = 'Payment system loading… please try again in a few seconds.';
     return;
   }
   try {
-    Paddle.Checkout.open({ transaction: txnId });
+    Paddle.Checkout.open({
+      items: [{ priceId: priceId, quantity: 1 }],
+      customData: { userId: userId, packageId: packageId },
+    });
   } catch (e) {
-    // Fallback: redirect to URL with _ptxn (Paddle.js may auto-detect)
-    const url = '/dashboard?_ptxn=' + txnId;
-    window.location.href = url;
+    $('payErr').textContent = 'Checkout error: ' + e.message;
   }
 }
-
-// If page loaded with _ptxn param, let Paddle.js auto-open the checkout
-(function checkPtxn() {
-  const params = new URLSearchParams(location.search);
-  const ptxn = params.get('_ptxn');
-  if (ptxn) {
-    // Wait for Paddle to init, then open
-    (function waitForPaddle(retries) {
-      if (retries <= 0) return;
-      if (paddleReady && window.Paddle) {
-        try { Paddle.Checkout.open({ transaction: ptxn }); } catch(e) {}
-        return;
-      }
-      setTimeout(() => waitForPaddle(retries - 1), 500);
-    })(20); // try for ~10 seconds
-  }
-})();
 
 /* ---- Dashboard logic ---- */
 
@@ -91,6 +81,8 @@ async function loadPackages() {
   const list = $('pkgList');
   list.innerHTML = '';
   packages.forEach((p) => {
+    // Remember Paddle price ID for items-based checkout
+    if (p.paddlePriceId) priceIdMap[p.id] = p.paddlePriceId;
     const el = document.createElement('div');
     el.className = 'pkg';
     el.innerHTML = `<b>${p.name}</b><span>Add $${p.credit.toFixed(2)} to your balance</span>
@@ -104,22 +96,18 @@ async function buy(packageId) {
   $('payErr').textContent = '';
   $('payErr').style.color = '#c2410c';
   const key = localStorage.getItem(KEY);
+  const priceId = priceIdMap[packageId];
+  if (!priceId) {
+    $('payErr').textContent = 'Package not configured. Contact support.';
+    return;
+  }
+  // Get current user ID for customData (webhook needs it to credit the right account)
+  let userId = '';
   try {
-    const r = await fetch('/api/checkout', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ key, packageId }),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error?.message || 'Checkout failed');
-    // Extract transaction ID from _ptxn=txn_... and open Paddle overlay
-    const match = (d.url || '').match(/_ptxn=(txn_[a-z0-9]+)/);
-    if (match) {
-      openPaddleCheckout(match[1]);
-    } else {
-      // Fallback redirect
-      window.location.href = d.url;
-    }
-  } catch (e) { $('payErr').textContent = e.message; }
+    const mr = await fetch('/api/me?key=' + encodeURIComponent(key));
+    if (mr.ok) { const u = await mr.json(); userId = u.id || ''; }
+  } catch {}
+  openPaddleCheckout(priceId, userId, packageId);
 }
 
 $('regForm').addEventListener('submit', async (e) => {

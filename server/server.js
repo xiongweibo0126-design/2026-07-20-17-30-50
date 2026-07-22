@@ -242,7 +242,12 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, { id: user.id, email: user.email, balance: user.balance, bonusBalance: user.bonusBalance, totalBalance: store.totalBalance(user) });
     }
     if (method === 'GET' && pathname === '/api/packages') {
-      return sendJSON(res, 200, { currency: config.currency, packages: config.packages });
+      // Attach Paddle price IDs so the frontend can use items-based checkout
+      const pkgs = config.packages.map((p) => ({
+        ...p,
+        paddlePriceId: config.paddle.prices[p.id] || '',
+      }));
+      return sendJSON(res, 200, { currency: config.currency, packages: pkgs });
     }
 
     // ---- API: Paddle client-side config ----
