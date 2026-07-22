@@ -22,7 +22,9 @@ async function initDB() {
     return;
   }
   const { Pool } = require('pg');
-  pgPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  // force IPv4: Supabase host resolves to both A and AAAA; Render free tier
+  // can't reach IPv6 (ENETUNREACH), so pin the connection to family 4.
+  pgPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, family: 4 });
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
