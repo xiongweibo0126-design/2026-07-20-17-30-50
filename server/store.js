@@ -10,10 +10,27 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const dns = require('dns');
 
 const USE_DB = !!process.env.DATABASE_URL;
 
 let pgPool = null;
+
+// Render free tier cannot reach IPv6 (ENETUNREACH). Supabase's host resolves
+// to both A and AAAA records, and pg tends to pick the AAAA one. Resolve the
+// hostname to a concrete IPv4 address at startup and inline it into the
+// connection string so the socket never attempts IPv6. `family: 4` is kept as
+// a belt-and-suspenders hint.
+async function resolveIPv4(connStr) {
+  try {
+    const url = new URL(connStr);
+    const { address } = await dns.promises.lookup(url.hostname, { family: 4 });
+    return connStr.replace(url.hostname, address);
+  } catch (e) {
+    console.warn('[store] IPv4 resolve failed, falling back to original host:', e.message);
+    return connStr;
+  }
+}
 
 async function initDB() {
   if (!USE_DB) {
@@ -22,9 +39,8 @@ async function initDB() {
     return;
   }
   const { Pool } = require('pg');
-  // force IPv4: Supabase host resolves to both A and AAAA; Render free tier
-  // can't reach IPv6 (ENETUNREACH), so pin the connection to family 4.
-  pgPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, family: 4 });
+  const connStr = await resolveIPv4(process.env.DATABASE_URL);
+  pgPool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false }, family: 4 });
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
