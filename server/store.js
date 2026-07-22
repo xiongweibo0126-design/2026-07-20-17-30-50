@@ -23,6 +23,28 @@ const USE_DB = !!process.env.DATABASE_URL;
 let pgPool = null;
 let lastDnsError = '';
 
+// Supabase's DIRECT Postgres host (db.<ref>.supabase.co) only publishes an
+// IPv6 (AAAA) record, which Render's free tier cannot reach (ENETUNREACH).
+// The CONNECTION-POOLER (PgBouncer) host publishes IPv4 and IS reachable.
+// Auto-rewrite the direct host -> pooler host so it "just works" regardless
+// of which host the user pasted into DATABASE_URL (direct OR pooler).
+function supabasePooler(connStr) {
+  try {
+    const url = new URL(connStr);
+    const m = /^db\.(.+)\.supabase\.co$/.exec(url.hostname);
+    if (!m) return connStr; // not a Supabase direct host; leave as-is
+    const region = 'ap-southeast-1'; // Supabase project region (Singapore)
+    url.hostname = `aws-0-${region}.pooler.supabase.com`;
+    if (!url.port || url.port === '5432') url.port = '6543';
+    url.searchParams.set('pgbouncer', 'true');
+    console.log('[store] Rewrote Supabase direct host -> pooler (IPv4):', url.hostname + ':' + url.port);
+    return url.toString();
+  } catch (e) {
+    console.warn('[store] supabasePooler rewrite failed:', e.message);
+    return connStr;
+  }
+}
+
 // Belt-and-suspenders: also try to resolve the host to a concrete IPv4 address
 // and inline it into the connection string. If the lookup fails we record the
 // reason (exposed via getDiagnostics) and fall back to the original host —
@@ -56,8 +78,11 @@ async function initDB() {
     return;
   }
   const { Pool } = require('pg');
-  const connStr = await resolveIPv4(process.env.DATABASE_URL);
-  pgPool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false }, family: 4 });
+  let connStr = supabasePooler(process.env.DATABASE_URL);
+  connStr = await resolveIPv4(connStr);
+  // prepare:false is required behind PgBouncer (transaction pooling) — otherwise
+  // prepared statements break across connections with "prepared statement does not exist".
+  pgPool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false }, family: 4, prepare: false });
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
